@@ -21,20 +21,20 @@ public class Server {
         try (ServerSocket echoSocket = new ServerSocket(portNumber)) {
             while (true) {
                 Socket clientSocket = echoSocket.accept();
-                System.out.println("Client connected");
 
                 Thread thread = new Thread(() -> {
                     try (PrintWriter socketOut = new PrintWriter(clientSocket.getOutputStream(), true);
                          BufferedReader socketIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
                     ) {
                         writers.add(socketOut);
+                        String username = socketIn.readLine();
+                        System.out.println(username + " connected");
+                        sendToAll(username + " connected");
 
                         String inputLine;
                         while ((inputLine = socketIn.readLine()) != null) {
-                            sendToAll(inputLine);
+                            sendToAll(username + ": " + inputLine);
                         }
-
-
                     } catch (IOException e) {
                         System.err.println("Client disconnected");
                     } finally {

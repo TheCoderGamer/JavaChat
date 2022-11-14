@@ -14,21 +14,43 @@ public class Client {
 
         InetAddress inetAddress = InetAddress.getLocalHost();
 
+        Socket socket = null;
         int portNumber = Integer.parseInt(args[0]);
+        String username;
 
-        try (Socket socket = new Socket(inetAddress, portNumber);
-             PrintWriter socketOut = new PrintWriter(socket.getOutputStream(), true);
+
+        // Connect to server
+        try {
+            socket = new Socket(inetAddress, portNumber);
+        } catch (IOException e) {
+            System.err.println("Could not connect to server");
+            System.exit(1);
+            socket.close();
+        }
+
+        System.out.printf("Connected to server %s on port %d%n", inetAddress, portNumber);
+        try (PrintWriter socketOut = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader socketIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in))
         ) {
+            // Username
+            System.out.println("Enter username: ");
+            username = stdIn.readLine();
+            socketOut.println(username);
+
+            System.out.println("*** Welcome " + username + " ***");
+
+
             // Create listener
             Thread listener = new Thread(() -> {
-                try (BufferedReader socketIn = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-                    String inputLine;
+                String inputLine;
+                try {
                     while ((inputLine = socketIn.readLine()) != null) {
-                        System.out.println("Server: " + inputLine);
+                        System.out.println("[Server] " + inputLine);
                     }
                 } catch (IOException e) {
                     System.err.println("Client disconnected");
+                    System.exit(1);
                 }
             });
             listener.start();
