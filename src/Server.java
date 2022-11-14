@@ -4,9 +4,13 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
-public class EchoServer {
-    public static void main(String[] args) throws IOException {
+public class Server {
+
+    private static final ArrayList<PrintWriter> writers = new ArrayList<>();
+
+    public static void main(String[] args) {
         if (args.length != 1) {
             System.err.println("Usage: java EchoServer <port number>");
             System.exit(1);
@@ -14,20 +18,23 @@ public class EchoServer {
 
         int portNumber = Integer.parseInt(args[0]);
 
-        try (ServerSocket echoSocket = new ServerSocket(portNumber);) {
+        try (ServerSocket echoSocket = new ServerSocket(portNumber)) {
             while (true) {
                 Socket clientSocket = echoSocket.accept();
                 System.out.println("Client connected");
 
                 Thread thread = new Thread(() -> {
-                    try (
-                            PrintWriter socketOut = new PrintWriter(clientSocket.getOutputStream(), true);
-                            BufferedReader socketIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                    try (PrintWriter socketOut = new PrintWriter(clientSocket.getOutputStream(), true);
+                         BufferedReader socketIn = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
                     ) {
+                        writers.add(socketOut);
+
                         String inputLine;
                         while ((inputLine = socketIn.readLine()) != null) {
-                            socketOut.println(inputLine);
+                            sendToAll(inputLine);
                         }
+
+
                     } catch (IOException e) {
                         System.err.println("Client disconnected");
                     } finally {
@@ -44,5 +51,13 @@ public class EchoServer {
             System.err.println(e.getMessage());
             System.exit(1);
         }
+
     }
+
+    public static synchronized void sendToAll(String msg) {
+        for (PrintWriter writer : writers) {
+            writer.println(msg);
+        }
+    }
+
 }
